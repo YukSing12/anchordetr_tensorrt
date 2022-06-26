@@ -1,0 +1,12 @@
+
+*.onnx
+*.pth
+*.pyc
+*.plan
+*.log
+*.nsys-rep
+*.sqlite
+*.so
+*.o
+build/
+*.d
