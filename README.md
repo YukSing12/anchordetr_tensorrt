@@ -73,7 +73,7 @@ bash build_anchor_detr.sh
 
 ![](figs/onnx2trt_1.png)![](figs/onnx2trt_1_2.png)
 
-- 解决3：修改onnx图, 插入一些类型转换节点。[代码](onnx2trt/modify_AnchorDETR.py#794-798)
+- 解决3：修改onnx图, 插入一些类型转换节点。[代码](onnx2trt/modify_AnchorDETR.py#L794-L798)
 
 - 问题4：onnx转trt时生成模型显存不足
 ![](figs/onnx2trt_2.png)
@@ -81,7 +81,7 @@ bash build_anchor_detr.sh
 
 - 问题5: 生成的TensorRT动态宽高模型推理出现nan
 
-- 解决5: 修改python[代码](onnx2trt/AnchorDETR/models/transformer.py#L429-430)
+- 解决5: 修改python[代码](onnx2trt/AnchorDETR/models/transformer.py#L429-L430)
 
 - 问题5：行-列分离注意力RCDA(row column decoupled attention)的高效实现
 
@@ -131,7 +131,7 @@ bash build_anchor_detr.sh
 ![](figs/opt-AddQBias.png)
 
 ### 插入Mask2Pos Plugin
-- 优化前(latency=15.7594ms, throughtput=69.0925qps, mAP=43.920%)：TRT将[mask2pos以及pos2posemb1d](onnx2trt/AnchorDETR/models/transformer.py#124-128)融合成了一个ForeignNode, 这里也可以自己实现一个Plugin进行替换。
+- 优化前(latency=15.7594ms, throughtput=69.0925qps, mAP=43.920%)：TRT将[mask2pos以及pos2posemb1d](onnx2trt/AnchorDETR/models/transformer.py#L124-L128)融合成了一个ForeignNode, 这里也可以自己实现一个Plugin进行替换。
 ![](figs/mask2pos.png)
 - 优化后(latency=15.3353ms, throughtput=70.4344qps, mAP=43.934%)：优化后的ForeignNode, 大部分都是内存的操作, 最终提速1.94%。
 ![](figs/opt-mask2pos.png)
