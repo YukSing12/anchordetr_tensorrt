@@ -32,7 +32,7 @@ export LIBRARY_PATH=/usr/local/TensorRT-8.4.1.5/lib/stubs:$LIBRARY_PATH
 source ~/.bashrc
 ```
 
-## 克隆仓库
+### 克隆仓库
 ```
 git clone https://github.com/YukSing12/trt-hackathon-2022
 cd trt-hackathon-2022
@@ -40,10 +40,10 @@ pip install -r requirements.txt
 ```
 本代码在python=3.8.10, pytorch=1.9.1, torchvision=0.10.1环境下测试
 
-## 准备数据
+### 准备数据
 详见[说明](datasets/README.md)
 
-## 运行命令
+### 运行命令
 ```
 cd trt-hackathon-2022/onnx2trt
 bash build_anchor_detr.sh
