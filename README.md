@@ -3,8 +3,11 @@
 ## 总述
 本项目是trt-hackathon-2022 决赛项目, 将AnchorDETR从Pytorch模型转换到TensorRT并部署到NVIDIA A10 GPU上。
 - 原始模型：Anchor DETR [[pdf]](https://arxiv.org/abs/2109.07107)[[code]](https://github.com/megvii-research/AnchorDETR)
-- 优化效果：精度上, 优化模型在COCO2017验证集上的mAP=43.934%, 相比原始精度, mAP下降0.329%。性能上, 优化模型的latence=15.3353ms, throughtput=70.4344qps, 相比于TRT自动优化的原始模型, 提速315.808%。
-
+- 优化方式：实现了MaskedSoftmax Plugin,Layernorm Plugin, AddBiasTranspose Plugin, Mask2Pos Plugin, 开启了FP16模式。
+- 优化效果：
+  - 精度上, 优化模型在COCO2017验证集上的mAP=43.934%, 相比原始精度, mAP下降0.329%。
+  - 性能上, 优化模型的latence=15.3353ms, throughtput=70.4344qps, 相比于TRT自动优化的原始模型, 提速315.808%。
+  - 发现了一个bug, 并提交了issue。
 ## 使用说明
 
 ### 准备环境
@@ -51,7 +54,6 @@ bash build_anchor_detr.sh
 
 ## 原始模型
 ### 模型简介
-- 用途以及效果
 - AnchorDETR是旷视提出的一种基于Transformer的目标检测器, 其引入了基于锚点的查询设计, 并设计了行-列分离注意力的注意力变体, 使得AnchorDETR可以减少内存使用的同时, 提升了精度和减少了训练代数。
 - 模型的整体结构如下
 ![](figs/pipeline.png)
@@ -83,9 +85,9 @@ bash build_anchor_detr.sh
 
 - 解决5: 修改python[代码](onnx2trt/AnchorDETR/models/transformer.py#L429-L430)
 
-- 问题5：行-列分离注意力RCDA(row column decoupled attention)的高效实现
+- 问题6：行-列分离注意力RCDA(row column decoupled attention)的高效实现
 
-- 解决5：尝试将里面除MatMul外的其他操作写成Plugin
+- 解决6：尝试将里面除MatMul外的其他操作写成Plugin
 
 ## 优化过程
 以下实验数据均在NVIDIA A10服务器上测试, TensorRT版本为8.4.1.5。
