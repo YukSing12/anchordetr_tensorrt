@@ -43,11 +43,11 @@ if args.ln:
 if args.softmax:
     onnxFile = onnxFile.replace(".onnx", "_softmax.onnx")
 if args.maskedsoftmax and not args.rcda:
-    onnxFile = onnxFile.replace(".onnx", "_maskedsoftmax.onnx")
+    onnxFile = onnxFile.replace(".onnx", "_msoftmax.onnx")
 if args.addQbiastranspose and not args.rcda:
-    onnxFile = onnxFile.replace(".onnx", "_addQbiastranspose.onnx")
+    onnxFile = onnxFile.replace(".onnx", "_Q.onnx")
 if args.addVbiastranspose and not args.rcda:
-    onnxFile = onnxFile.replace(".onnx", "_addVbiastranspose.onnx")
+    onnxFile = onnxFile.replace(".onnx", "_V.onnx")
 if args.optshape:
     onnxFile = onnxFile.replace(".onnx", "_optshape.onnx")
 if args.twodmm:

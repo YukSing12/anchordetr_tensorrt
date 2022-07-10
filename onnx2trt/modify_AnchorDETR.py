@@ -839,7 +839,7 @@ if ENABLE_MASKEDSOFTMAX_PLUGIN and not ENABLE_RCDA_PLUGIN:
         if op_name in nodes_dict:
             replace_with_maskedsoftmax(nodes_dict, nodes_dict[op_name], nodes)
 
-    dst_onnx_path = dst_onnx_path.replace(".onnx", "_maskedsoftmax.onnx")
+    dst_onnx_path = dst_onnx_path.replace(".onnx", "_msoftmax.onnx")
 if ENABLE_ADDQBIASTRANSPOSE_PLUGIN and not ENABLE_RCDA_PLUGIN:
     print("Fuse ops into AddQBiasTranspose in encoder")
     ops = [1502, 1477, 1961, 1936, 2420, 2395, 2879, 2854, 3338, 3313, 3797, 3772]
@@ -854,7 +854,7 @@ if ENABLE_ADDQBIASTRANSPOSE_PLUGIN and not ENABLE_RCDA_PLUGIN:
         op_name = "Add_{}".format(op_name)
         if op_name in nodes_dict:
             replace_with_addQbiastranspose(nodes_dict, nodes_dict[op_name], nodes)
-    dst_onnx_path = dst_onnx_path.replace(".onnx", "_addQbiastranspose.onnx")
+    dst_onnx_path = dst_onnx_path.replace(".onnx", "_Q.onnx")
 if ENABLE_ADDVBIASTRANSPOSE_PLUGIN and not ENABLE_RCDA_PLUGIN:
     print("Fuse ops into AddVBiasTranspose in encoder")
     ops = [1577, 2036, 2495, 2954, 3413, 3872]
@@ -870,7 +870,7 @@ if ENABLE_ADDVBIASTRANSPOSE_PLUGIN and not ENABLE_RCDA_PLUGIN:
         if op_name in nodes_dict:
             replace_with_addVbiastranspose(nodes_dict, nodes_dict[op_name], nodes)
 
-    dst_onnx_path = dst_onnx_path.replace(".onnx", "_addVbiastranspose.onnx")
+    dst_onnx_path = dst_onnx_path.replace(".onnx", "_V.onnx")
 if ENABLE_OPTDYNAMICSHAPE:
     print("Optimize dynamic shpae warning")
     optimize_dynamic_shape(nodes_dict, graph, nodes)
