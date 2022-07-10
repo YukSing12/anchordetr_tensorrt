@@ -318,175 +318,135 @@ def evaluate_trt(engines, contexts, criterion, postprocessors, data_loader, base
             output_dir=os.path.join(output_dir, "panoptic_eval"),
         )
 
-    if len(engines) < 2:
-        if args.use_memory_pool:
-            input_memory_pool = {}
-            output_memory_pool = {}
-        anchorDETR_nInput = np.sum([ engines[0].binding_is_input(i) for i in range(engines[0].num_bindings) ])
-        anchorDETR_nOutput = engines[0].num_bindings - anchorDETR_nInput
-    else:
-        backbone_nInput = np.sum([ engines[0].binding_is_input(i) for i in range(engines[0].num_bindings) ])
-        backbone_nOnput = engines[0].num_bindings - backbone_nInput
-        transformer_nInput = np.sum([ engines[1].binding_is_input(i) for i in range(engines[1].num_bindings) ])
-        transformer_nOnput = engines[1].num_bindings - transformer_nInput
+
+    if args.use_memory_pool:
+        input_memory_pool = {}
+        output_memory_pool = {}
+    anchorDETR_nInput = np.sum([ engines[0].binding_is_input(i) for i in range(engines[0].num_bindings) ])
+    anchorDETR_nOutput = engines[0].num_bindings - anchorDETR_nInput
+
     for samples, targets in metric_logger.log_every(data_loader, 100, header):
         samples = samples
         targets = [{k: v for k, v in t.items()} for t in targets]
 
-        if len(engines) < 2:
-            if args.use_memory_pool:
-                contexts[0].set_binding_shape(0, samples.tensors.shape)
-                contexts[0].set_binding_shape(1, samples.mask.shape)
-                anchorDETR_bufferH = []
-                anchorDETR_bufferH.append( samples.tensors.numpy().astype(np.float32).reshape(-1) )
-                anchorDETR_bufferH.append( samples.mask.numpy().astype(np.float32).reshape(-1) )
-                for i in range(anchorDETR_nInput, anchorDETR_nInput + anchorDETR_nOutput):                
-                    anchorDETR_bufferH.append(np.empty(contexts[0].get_binding_shape(i), dtype=trt.nptype(engines[0].get_binding_dtype(i))) )
-                assert len(anchorDETR_bufferH) == 4
-                anchorDETR_bufferD = []
-                for i in range( anchorDETR_nInput):   
-                    if anchorDETR_bufferH[i].nbytes not in input_memory_pool.keys():
-                        input_memory_pool[anchorDETR_bufferH[i].nbytes] = cudart.cudaMalloc(anchorDETR_bufferH[i].nbytes)[1]
-                    anchorDETR_bufferD.append(input_memory_pool[anchorDETR_bufferH[i].nbytes])
-                for i in range(anchorDETR_nInput, anchorDETR_nInput + anchorDETR_nOutput):   
-                    if anchorDETR_bufferH[i].nbytes not in output_memory_pool.keys():
-                        output_memory_pool[anchorDETR_bufferH[i].nbytes] = cudart.cudaMalloc(anchorDETR_bufferH[i].nbytes)[1]
-                    anchorDETR_bufferD.append(output_memory_pool[anchorDETR_bufferH[i].nbytes])
+        if args.use_memory_pool:
+            contexts[0].set_binding_shape(0, samples.tensors.shape)
+            contexts[0].set_binding_shape(1, samples.mask.shape)
+            anchorDETR_bufferH = []
+            anchorDETR_bufferH.append( samples.tensors.numpy().astype(np.float32).reshape(-1) )
+            anchorDETR_bufferH.append( samples.mask.numpy().astype(np.float32).reshape(-1) )
+            for i in range(anchorDETR_nInput, anchorDETR_nInput + anchorDETR_nOutput):                
+                anchorDETR_bufferH.append(np.empty(contexts[0].get_binding_shape(i), dtype=trt.nptype(engines[0].get_binding_dtype(i))) )
+            assert len(anchorDETR_bufferH) == 4
+            anchorDETR_bufferD = []
+            for i in range( anchorDETR_nInput):   
+                if anchorDETR_bufferH[i].nbytes not in input_memory_pool.keys():
+                    input_memory_pool[anchorDETR_bufferH[i].nbytes] = cudart.cudaMalloc(anchorDETR_bufferH[i].nbytes)[1]
+                anchorDETR_bufferD.append(input_memory_pool[anchorDETR_bufferH[i].nbytes])
+            for i in range(anchorDETR_nInput, anchorDETR_nInput + anchorDETR_nOutput):   
+                if anchorDETR_bufferH[i].nbytes not in output_memory_pool.keys():
+                    output_memory_pool[anchorDETR_bufferH[i].nbytes] = cudart.cudaMalloc(anchorDETR_bufferH[i].nbytes)[1]
+                anchorDETR_bufferD.append(output_memory_pool[anchorDETR_bufferH[i].nbytes])
 
-                for i in range(anchorDETR_nInput):
-                    cudart.cudaMemcpy(anchorDETR_bufferD[i], anchorDETR_bufferH[i].ctypes.data, anchorDETR_bufferH[i].nbytes, cudart.cudaMemcpyKind.cudaMemcpyHostToDevice)
-                contexts[0].execute_v2(anchorDETR_bufferD)
-                for i in range(anchorDETR_nInput, anchorDETR_nInput + anchorDETR_nOutput):  
-                    cudart.cudaMemcpy(anchorDETR_bufferH[i].ctypes.data, anchorDETR_bufferD[i], anchorDETR_bufferH[i].nbytes, cudart.cudaMemcpyKind.cudaMemcpyDeviceToHost)
-                pred_logit_idx = engines[0].get_binding_index('pred_logits')
-                pred_boxes_idx = engines[0].get_binding_index('pred_boxes')
-                outputs = {}
-                outputs['pred_logits'] = torch.from_numpy(anchorDETR_bufferH[pred_logit_idx].reshape(engines[0].get_binding_shape(pred_logit_idx)))
-                outputs['pred_boxes'] = torch.from_numpy(anchorDETR_bufferH[pred_boxes_idx].reshape(engines[0].get_binding_shape(pred_boxes_idx)))
+            for i in range(anchorDETR_nInput):
+                cudart.cudaMemcpy(anchorDETR_bufferD[i], anchorDETR_bufferH[i].ctypes.data, anchorDETR_bufferH[i].nbytes, cudart.cudaMemcpyKind.cudaMemcpyHostToDevice)
+            contexts[0].execute_v2(anchorDETR_bufferD)
+            for i in range(anchorDETR_nInput, anchorDETR_nInput + anchorDETR_nOutput):  
+                cudart.cudaMemcpy(anchorDETR_bufferH[i].ctypes.data, anchorDETR_bufferD[i], anchorDETR_bufferH[i].nbytes, cudart.cudaMemcpyKind.cudaMemcpyDeviceToHost)
+            pred_logit_idx = engines[0].get_binding_index('pred_logits')
+            pred_boxes_idx = engines[0].get_binding_index('pred_boxes')
+            outputs = {}
+            outputs['pred_logits'] = torch.from_numpy(anchorDETR_bufferH[pred_logit_idx].reshape(engines[0].get_binding_shape(pred_logit_idx)))
+            outputs['pred_boxes'] = torch.from_numpy(anchorDETR_bufferH[pred_boxes_idx].reshape(engines[0].get_binding_shape(pred_boxes_idx)))
 
-                # for d in anchorDETR_bufferD:
-                #     cudart.cudaFree(d)
-
-            else:
-                contexts[0].set_binding_shape(0, samples.tensors.shape)
-                contexts[0].set_binding_shape(1, samples.mask.shape)
-                anchorDETR_bufferH = []
-                anchorDETR_bufferH.append( samples.tensors.numpy().astype(np.float32).reshape(-1) )
-                anchorDETR_bufferH.append( samples.mask.numpy().astype(np.float32).reshape(-1) )
-                for i in range(anchorDETR_nInput, anchorDETR_nInput + anchorDETR_nOutput):                
-                    anchorDETR_bufferH.append(np.empty(contexts[0].get_binding_shape(i), dtype=trt.nptype(engines[0].get_binding_dtype(i))) )
-                assert len(anchorDETR_bufferH) == 4
-                anchorDETR_bufferD = []
-                for i in range( anchorDETR_nInput + anchorDETR_nOutput):                
-                    anchorDETR_bufferD.append( cudart.cudaMalloc(anchorDETR_bufferH[i].nbytes)[1] )
-                for i in range(anchorDETR_nInput):
-                    cudart.cudaMemcpy(anchorDETR_bufferD[i], anchorDETR_bufferH[i].ctypes.data, anchorDETR_bufferH[i].nbytes, cudart.cudaMemcpyKind.cudaMemcpyHostToDevice)
-                contexts[0].execute_v2(anchorDETR_bufferD)
-                for i in range(anchorDETR_nInput, anchorDETR_nInput + anchorDETR_nOutput):  
-                    cudart.cudaMemcpy(anchorDETR_bufferH[i].ctypes.data, anchorDETR_bufferD[i], anchorDETR_bufferH[i].nbytes, cudart.cudaMemcpyKind.cudaMemcpyDeviceToHost)
-                pred_logit_idx = engines[0].get_binding_index('pred_logits')
-                pred_boxes_idx = engines[0].get_binding_index('pred_boxes')
-                outputs = {}
-                outputs['pred_logits'] = torch.from_numpy(anchorDETR_bufferH[pred_logit_idx].reshape(engines[0].get_binding_shape(pred_logit_idx)))
-                outputs['pred_boxes'] = torch.from_numpy(anchorDETR_bufferH[pred_boxes_idx].reshape(engines[0].get_binding_shape(pred_boxes_idx)))
-
-                for d in anchorDETR_bufferD:
-                    cudart.cudaFree(d)
+            # for d in anchorDETR_bufferD:
+            #     cudart.cudaFree(d)
 
         else:
-            # backbone input shape
-            contexts[0].set_binding_shape(0, samples.tensors.shape) # image
-            contexts[0].set_binding_shape(1, samples.mask.shape)    # mask
-            feat_idx
-            if args.dynamic_shape:
-                feat_h = math.ceil(samples.tensors.shape[2] / 16)
-                feat_w = math.ceil(samples.tensors.shape[3] / 16)
-                # feat_shape = samples.tensors.shape
-                contexts[1].set_binding_shape(0, (samples.tensors.shape[0], 2048, feat_h, feat_w))
-                contexts[1].set_binding_shape(1, (1, samples.tensors.shape[0], feat_h, feat_w)) # mask_out
-            else:
-                # contexts[1].set_binding_shape(0, engines[0].get_binding_shape(2))
-                # contexts[1].set_binding_shape(1, engines[0].get_binding_shape(3))
-                contexts[1].set_binding_shape(0, engines[0].get_binding_shape(3))  # 1541, feat
-                contexts[1].set_binding_shape(1, engines[0].get_binding_shape(2))  # 1568, mask_out
-
-
-            # prepare backbone input buffer
-            backbone_bufferH = []
-            backbone_bufferH.append( samples.tensors.numpy().astype(np.float32).reshape(-1) )
-            backbone_bufferH.append( samples.mask.numpy().astype(np.float32).reshape(-1) )
-            for i in range(backbone_nInput, backbone_nInput + backbone_nOnput):                
-                backbone_bufferH.append(np.empty(contexts[0].get_binding_shape(i), dtype=trt.nptype(engines[0].get_binding_dtype(i))) )
-            assert len(backbone_bufferH) == 4
-            backbone_bufferD = []
-            for i in range(backbone_nInput + backbone_nOnput):                
-                backbone_bufferD.append( cudart.cudaMalloc(backbone_bufferH[i].nbytes)[1] )
-            for i in range(backbone_nInput):
-                cudart.cudaMemcpy(backbone_bufferD[i], backbone_bufferH[i].ctypes.data, backbone_bufferH[i].nbytes, cudart.cudaMemcpyKind.cudaMemcpyHostToDevice)
+            contexts[0].set_binding_shape(0, samples.tensors.shape)
+            contexts[0].set_binding_shape(1, samples.mask.shape)
+            anchorDETR_bufferH = []
+            anchorDETR_bufferH.append( samples.tensors.numpy().astype(np.float32).reshape(-1) )
+            anchorDETR_bufferH.append( samples.mask.numpy().astype(np.float32).reshape(-1) )
+            for i in range(anchorDETR_nInput, anchorDETR_nInput + anchorDETR_nOutput):                
+                anchorDETR_bufferH.append(np.empty(contexts[0].get_binding_shape(i), dtype=trt.nptype(engines[0].get_binding_dtype(i))) )
             
-            # backbone inference
-            contexts[0].execute_v2(backbone_bufferD)
+            anchorDETR_bufferD = []
+            for i in range( anchorDETR_nInput + anchorDETR_nOutput):                
+                anchorDETR_bufferD.append( cudart.cudaMalloc(anchorDETR_bufferH[i].nbytes)[1] )
+            for i in range(anchorDETR_nInput):
+                cudart.cudaMemcpy(anchorDETR_bufferD[i], anchorDETR_bufferH[i].ctypes.data, anchorDETR_bufferH[i].nbytes, cudart.cudaMemcpyKind.cudaMemcpyHostToDevice)
+            contexts[0].execute_v2(anchorDETR_bufferD)
+            for i in range(anchorDETR_nInput, anchorDETR_nInput + anchorDETR_nOutput):  
+                cudart.cudaMemcpy(anchorDETR_bufferH[i].ctypes.data, anchorDETR_bufferD[i], anchorDETR_bufferH[i].nbytes, cudart.cudaMemcpyKind.cudaMemcpyDeviceToHost)
 
-            # prepare transformer input and output buffer
-            transformer_bufferH = []
-            transformer_bufferD = []
-            # transformer_bufferD.append(backbone_bufferD[2])
-            # transformer_bufferD.append(backbone_bufferD[3])
-            transformer_bufferD.append(backbone_bufferD[3]) # feat-1541
-            transformer_bufferD.append(backbone_bufferD[2]) # mask_out-1568
-            for i in range(transformer_nInput, transformer_nInput + transformer_nOnput):                
-                transformer_bufferH.append( np.empty(contexts[1].get_binding_shape(i), dtype=trt.nptype(engines[1].get_binding_dtype(i))) )
-            assert len(transformer_bufferH) == 2
-            for i in range(transformer_nOnput):                     
-                transformer_bufferD.append( cudart.cudaMalloc(transformer_bufferH[i].nbytes)[1] )
+            if args.deepstream:
+                scores_idx = engines[0].get_binding_index('scores')
+                boxes_idx = engines[0].get_binding_index('boxes')
+                labels_idx = engines[0].get_binding_index('labels')
+                outputs = {}
+                outputs['pred_scores'] = torch.from_numpy(anchorDETR_bufferH[scores_idx].reshape(engines[0].get_binding_shape(scores_idx)))
+                outputs['pred_boxes'] = torch.from_numpy(anchorDETR_bufferH[boxes_idx].reshape(engines[0].get_binding_shape(boxes_idx)))
+                outputs['pred_labels'] = torch.from_numpy(anchorDETR_bufferH[labels_idx].reshape(engines[0].get_binding_shape(labels_idx)))
+            else:
+                pred_logit_idx = engines[0].get_binding_index('pred_logits')
+                pred_boxes_idx = engines[0].get_binding_index('pred_boxes')
+                outputs = {}
+                outputs['pred_logits'] = torch.from_numpy(anchorDETR_bufferH[pred_logit_idx].reshape(engines[0].get_binding_shape(pred_logit_idx)))
+                outputs['pred_boxes'] = torch.from_numpy(anchorDETR_bufferH[pred_boxes_idx].reshape(engines[0].get_binding_shape(pred_boxes_idx)))
 
-            # transformer inference
-            contexts[1].execute_v2(transformer_bufferD)
-            for i in range(transformer_nInput, transformer_nInput + transformer_nOnput):  
-                cudart.cudaMemcpy(transformer_bufferH[i-transformer_nInput].ctypes.data, transformer_bufferD[i], transformer_bufferH[i-transformer_nInput].nbytes, cudart.cudaMemcpyKind.cudaMemcpyDeviceToHost)
-
-            pred_logit_idx = engines[1].get_binding_index('pred_logits')
-            pred_boxes_idx = engines[1].get_binding_index('pred_boxes')
-            outputs = {}
-            outputs['pred_logits'] = torch.from_numpy(transformer_bufferH[pred_logit_idx-transformer_nInput].reshape(engines[1].get_binding_shape(pred_logit_idx)))
-            outputs['pred_boxes'] = torch.from_numpy(transformer_bufferH[pred_boxes_idx-transformer_nInput].reshape(engines[1].get_binding_shape(pred_boxes_idx)))
-
-            for d in backbone_bufferD+transformer_bufferD:
+            for d in anchorDETR_bufferD:
                 cudart.cudaFree(d)
 
-        loss_dict = criterion(outputs, targets)
-        weight_dict = criterion.weight_dict
+        if not args.deepstream:
+            loss_dict = criterion(outputs, targets)
+            weight_dict = criterion.weight_dict
 
-        # reduce losses over all GPUs for logging purposes
-        loss_dict_reduced = utils.reduce_dict(loss_dict)
-        loss_dict_reduced_scaled = {k: v * weight_dict[k]
-                                    for k, v in loss_dict_reduced.items() if k in weight_dict}
-        loss_dict_reduced_unscaled = {f'{k}_unscaled': v
-                                      for k, v in loss_dict_reduced.items()}
-        # metric_logger.update(loss=sum(loss_dict_reduced_scaled.values()),
-        #                      **loss_dict_reduced_scaled,
-        #                      **loss_dict_reduced_unscaled)
-        metric_logger.update(loss=sum(loss_dict_reduced_scaled.values()))
-        metric_logger.update(class_error=loss_dict_reduced['class_error'])
+            # reduce losses over all GPUs for logging purposes
+            loss_dict_reduced = utils.reduce_dict(loss_dict)
+            loss_dict_reduced_scaled = {k: v * weight_dict[k]
+                                        for k, v in loss_dict_reduced.items() if k in weight_dict}
+            loss_dict_reduced_unscaled = {f'{k}_unscaled': v
+                                        for k, v in loss_dict_reduced.items()}
+            # metric_logger.update(loss=sum(loss_dict_reduced_scaled.values()),
+            #                      **loss_dict_reduced_scaled,
+            #                      **loss_dict_reduced_unscaled)
+            metric_logger.update(loss=sum(loss_dict_reduced_scaled.values()))
+            metric_logger.update(class_error=loss_dict_reduced['class_error'])
 
-        orig_target_sizes = torch.stack([t["orig_size"] for t in targets], dim=0)
-        results = postprocessors['bbox'](outputs, orig_target_sizes)
-        if 'segm' in postprocessors.keys():
-            target_sizes = torch.stack([t["size"] for t in targets], dim=0)
-            results = postprocessors['segm'](results, outputs, orig_target_sizes, target_sizes)
-        res = {target['image_id'].item(): output for target, output in zip(targets, results)}
-        if coco_evaluator is not None:
-            coco_evaluator.update(res)
+            orig_target_sizes = torch.stack([t["orig_size"] for t in targets], dim=0)
+            results = postprocessors['bbox'](outputs, orig_target_sizes)
+            if 'segm' in postprocessors.keys():
+                target_sizes = torch.stack([t["size"] for t in targets], dim=0)
+                results = postprocessors['segm'](results, outputs, orig_target_sizes, target_sizes)
+            res = {target['image_id'].item(): output for target, output in zip(targets, results)}
+            if coco_evaluator is not None:
+                coco_evaluator.update(res)
 
-        if panoptic_evaluator is not None:
-            res_pano = postprocessors["panoptic"](outputs, target_sizes, orig_target_sizes)
-            for i, target in enumerate(targets):
-                image_id = target["image_id"].item()
-                file_name = f"{image_id:012d}.png"
-                res_pano[i]["image_id"] = image_id
-                res_pano[i]["file_name"] = file_name
+            if panoptic_evaluator is not None:
+                res_pano = postprocessors["panoptic"](outputs, target_sizes, orig_target_sizes)
+                for i, target in enumerate(targets):
+                    image_id = target["image_id"].item()
+                    file_name = f"{image_id:012d}.png"
+                    res_pano[i]["image_id"] = image_id
+                    res_pano[i]["file_name"] = file_name
 
-            panoptic_evaluator.update(res_pano)
+                panoptic_evaluator.update(res_pano)
+
+        else:
+            metric_logger.update(loss=0)
+            metric_logger.update(class_error=0)
+            
+            orig_target_sizes = torch.stack([t["orig_size"] for t in targets], dim=0)
+            img_h, img_w = orig_target_sizes.unbind(1)
+            scale_fct = torch.stack([img_w, img_h, img_w, img_h], dim=1)
+            outputs['pred_boxes'] = outputs['pred_boxes'] * scale_fct[:, None, :]
+
+            results = [{'scores': s, 'labels': l, 'boxes': b} for s, l, b in zip(outputs['pred_scores'], outputs['pred_labels'], outputs['pred_boxes'])]
+
+            res = {target['image_id'].item(): output for target, output in zip(targets, results)}
+            if coco_evaluator is not None:
+                coco_evaluator.update(res)
 
         
     if args.use_memory_pool:

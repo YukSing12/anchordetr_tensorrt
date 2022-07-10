@@ -30,7 +30,7 @@ import copy
 class AnchorDETR(nn.Module):
     """ This is the AnchorDETR module that performs object detection """
 
-    def __init__(self, backbone, transformer,  num_feature_levels, aux_loss=True):
+    def __init__(self, backbone, transformer,  num_feature_levels, aux_loss=True, deepstream=False):
         """ Initializes the model.
         Parameters:
             backbone: torch module of the backbone to be used. See backbone.py
@@ -72,6 +72,8 @@ class AnchorDETR(nn.Module):
             nn.init.xavier_uniform_(proj[0].weight, gain=1)
             nn.init.constant_(proj[0].bias, 0)
 
+        self.deepstream = deepstream
+
     # def forward(self, samples: NestedTensor):
     def forward(self, image, mask):
         """ The forward expects a NestedTensor, which consists of:
@@ -108,10 +110,24 @@ class AnchorDETR(nn.Module):
         outputs_class, outputs_coord = self.transformer(srcs, masks)
 
         # out = {'pred_logits': outputs_class[-1], 'pred_boxes': outputs_coord[-1]}
-        out = {'pred_logits': outputs_class, 'pred_boxes': outputs_coord}
+        
         # if self.aux_loss:
         #     out['aux_outputs'] = self._set_aux_loss(outputs_class, outputs_coord)
+        if self.deepstream:
+            out_logits = outputs_class
+            out_bbox = outputs_coord
 
+            prob = out_logits.sigmoid()
+            topk_values, topk_indexes = torch.topk(prob.view(out_logits.shape[0], -1), 100, dim=1)
+            scores = topk_values
+            topk_boxes = topk_indexes // out_logits.shape[2]
+            labels = topk_indexes % out_logits.shape[2]
+            boxes = torch.gather(out_bbox, 1, topk_boxes.unsqueeze(-1).repeat(1, 1, 4))
+            boxes = box_ops.box_cxcywh_to_xyxy(boxes)
+
+            out = {'scores' : scores, 'boxes': boxes, 'labels': labels}
+        else:
+            out = {'pred_logits': outputs_class, 'pred_boxes': outputs_coord}
         return out
 
     @torch.jit.unused
@@ -328,8 +344,8 @@ class PostProcess(nn.Module):
         scores = topk_values
         topk_boxes = topk_indexes // out_logits.shape[2]
         labels = topk_indexes % out_logits.shape[2]
-        boxes = box_ops.box_cxcywh_to_xyxy(out_bbox)
-        boxes = torch.gather(boxes, 1, topk_boxes.unsqueeze(-1).repeat(1, 1, 4))
+        boxes = torch.gather(out_bbox, 1, topk_boxes.unsqueeze(-1).repeat(1, 1, 4))
+        boxes = box_ops.box_cxcywh_to_xyxy(boxes)
 
         # and from relative [0, 1] to absolute [0, height] coordinates
         img_h, img_w = target_sizes.unbind(1)
@@ -354,7 +370,8 @@ def build(args):
         backbone,
         transformer,
         num_feature_levels=args.num_feature_levels,
-        aux_loss=args.aux_loss
+        aux_loss=args.aux_loss,
+        deepstream=args.deepstream
     )
     if args.masks:
         model = DETRsegm(model, freeze_detr=(args.frozen_weights is not None))

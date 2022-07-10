@@ -121,7 +121,7 @@ def get_args_parser():
     parser.add_argument('--verbose', default=False, action='store_true')
     parser.add_argument('--dynamic_shape', default=False, action='store_true')
     parser.add_argument('--do_constant_folding', default=False, action='store_true')
-
+    parser.add_argument('--deepstream', action='store_true', default=False, help='Export onnx for deepstream')
 
     return parser
 
@@ -151,7 +151,10 @@ def main(args):
     
     model.eval()
     input_names = ["image", "mask"]
-    output_names = ["pred_logits", "pred_boxes"]
+    if args.deepstream:
+        output_names = ["scores", "boxes", "labels"]
+    else:
+        output_names = ["pred_logits", "pred_boxes"]
 
     x=(torch.randn((1, 3, 800, 800)), torch.randn((1, 800, 800)))
     

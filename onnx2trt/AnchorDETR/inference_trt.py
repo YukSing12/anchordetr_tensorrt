@@ -128,7 +128,7 @@ def get_args_parser():
     parser.add_argument('--use_memory_pool', default=False, action='store_true', help='whether to use memeory pool for reuse')
     parser.add_argument('--execute_async', default=False, action='store_true', help='asynchronous inference')
     parser.add_argument('--enable_plugin_repos', default=False, action='store_true', help='enable custom plugins in  plugin repos ')
-
+    parser.add_argument('--deepstream', action='store_true', default=False, help='Export onnx for deepstream')
 
     return parser
 
