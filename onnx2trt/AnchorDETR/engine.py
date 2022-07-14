@@ -112,7 +112,7 @@ def evaluate(model, criterion, postprocessors, data_loader, base_ds, device, out
         samples = samples.to(device)
         targets = [{k: v.to(device) for k, v in t.items()} for t in targets]
 
-        outputs = model(samples.tensors, samples.mask)
+        outputs = model(samples.tensors)
         # outputs = model(samples)
         loss_dict = criterion(outputs, targets)
         weight_dict = criterion.weight_dict
@@ -364,10 +364,8 @@ def evaluate_trt(engines, contexts, criterion, postprocessors, data_loader, base
 
         else:
             contexts[0].set_binding_shape(0, samples.tensors.shape)
-            contexts[0].set_binding_shape(1, samples.mask.shape)
             anchorDETR_bufferH = []
             anchorDETR_bufferH.append( samples.tensors.numpy().astype(np.float32).reshape(-1) )
-            anchorDETR_bufferH.append( samples.mask.numpy().astype(np.float32).reshape(-1) )
             for i in range(anchorDETR_nInput, anchorDETR_nInput + anchorDETR_nOutput):                
                 anchorDETR_bufferH.append(np.empty(contexts[0].get_binding_shape(i), dtype=trt.nptype(engines[0].get_binding_dtype(i))) )
             

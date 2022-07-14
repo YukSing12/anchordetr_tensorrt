@@ -124,7 +124,7 @@ def get_args_parser():
 
     parser.add_argument('--dynamic_shape', default=False, action='store_true', help='whether to use dynamic shape as input')
     # parser.add_argument('--img_size', default=800, action='store_true', help='whether to use dynamic shape as input')
-
+    parser.add_argument('--deepstream', action='store_true', default=False, help='Export onnx for deepstream')
 
     return parser
 

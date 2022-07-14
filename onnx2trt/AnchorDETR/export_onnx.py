@@ -150,13 +150,13 @@ def main(args):
             print('Unexpected Keys: {}'.format(unexpected_keys))
     
     model.eval()
-    input_names = ["image", "mask"]
+    input_names = ["image"]
     if args.deepstream:
         output_names = ["scores", "boxes", "labels"]
     else:
         output_names = ["pred_logits", "pred_boxes"]
 
-    x=(torch.randn((1, 3, 800, 800)), torch.randn((1, 800, 800)))
+    x=torch.randn((1, 3, 800, 800))
     
 
     if not args.dynamic_shape:
@@ -175,7 +175,7 @@ def main(args):
         print('Export ONNX model with dynamic shape!')
         # dynamic_axes = {'image':{0:'batch', 2:'height', 3:'width'}, 'mask':{0:'batch', 1:'height', 2:'width'}, 
         #                 'pred_logits': {0:'batch', 1:'query_size'}, 'pred_boxes': {0:'batch', 1:'query_size'}}
-        dynamic_axes = {'image':{2:'height', 3:'width'}, 'mask':{1:'height', 2:'width'}}
+        dynamic_axes = {'image':{2:'height', 3:'width'}}
         # dynamic_axes = {'image':{0:'batch'}, 'mask':{0:'batch'}, 
         #                 'pred_logits': {0:'batch'}, 'pred_boxes': {0:'batch'}}
 

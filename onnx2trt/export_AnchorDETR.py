@@ -27,6 +27,7 @@ def get_args():
     parser.add_argument('--posemb', action='store_true', default=False, help='Reuse posemb or not')
     parser.add_argument('--rmslice', action='store_true', default=False, help='Remove nodes of slice or not')
     parser.add_argument('--fp16', action='store_true', default=False, help='Enable FP16 mode or not, default is TF32 if it is supported')
+    parser.add_argument('--log_level', default=1, type=int, help='Logger level. (0:VERBOSE, 1:INFO, 2:WARNING, 3:ERROR, 4:INTERNAL_ERROR)')
     args = parser.parse_args()
     return args
 
@@ -76,7 +77,13 @@ timeCacheFile = "/target/onnx2trt/AnchorDETR.cache"
 soFileList = glob("./*.so")
 useTimeCache = False
 
-logger = trt.Logger(trt.Logger.INFO)                                       # Logger Level: VERBOSE,INFO,WARNING,ERROR,INTERNAL_ERROR
+log_level = {0:trt.Logger.VERBOSE,
+             1:trt.Logger.INFO,
+             2:trt.Logger.WARNING,
+             3:trt.Logger.ERROR,
+             4:trt.Logger.INTERNAL_ERROR}
+
+logger = trt.Logger(log_level[args.log_level])                                       # Logger Level: VERBOSE,INFO,WARNING,ERROR,INTERNAL_ERROR
 if os.path.isfile(trtFile):                                                
     with open(trtFile, 'rb') as f:
         engineString = f.read()
@@ -142,9 +149,9 @@ else:
     print("inputTensor.name:{}".format(inputTensor.name))
     profile.set_shape(inputTensor.name, (1, 3, 320, 512), (1, 3, 800, 800), (1, 3, 1344, 1344))             
 
-    inputTensor = network.get_input(1)  # mask
-    print("inputTensor.name:{}".format(inputTensor.name))
-    profile.set_shape(inputTensor.name, (1, 320, 512), (1, 800, 800), (1, 1344, 1344))           
+    # inputTensor = network.get_input(1)  # mask
+    # print("inputTensor.name:{}".format(inputTensor.name))
+    # profile.set_shape(inputTensor.name, (1, 320, 512), (1, 800, 800), (1, 1344, 1344))           
     config.add_optimization_profile(profile)
 
     t0 = time()

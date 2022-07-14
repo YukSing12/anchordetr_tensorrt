@@ -75,7 +75,7 @@ class AnchorDETR(nn.Module):
         self.deepstream = deepstream
 
     # def forward(self, samples: NestedTensor):
-    def forward(self, image, mask):
+    def forward(self, image):
         """ The forward expects a NestedTensor, which consists of:
                - samples.tensor: batched images, of shape [batch_size x 3 x H x W]
                - samples.mask: a binary mask of shape [batch_size x H x W], containing 1 on padded pixels
@@ -93,6 +93,7 @@ class AnchorDETR(nn.Module):
         # if not isinstance(samples, NestedTensor):
         #     samples = nested_tensor_from_tensor_list(samples)
         # features = self.backbone(samples)
+        mask = torch.zeros([image.shape[0],image.shape[2],image.shape[3]], device=image.device).bool()
         features, masks_ = self.backbone(image, mask)
 
         srcs = []

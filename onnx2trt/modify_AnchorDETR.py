@@ -204,7 +204,7 @@ def fuse_slice_to_concat(nodes_dict, target_node, num):
 def merge_parameters(nodes_dict, target_node):
     node_id = int(target_node.name.split("_")[-1])
     if ('Slice_{}'.format(node_id+30) not in nodes_dict):
-        print("Can not merge parameters from {}".format(target_node.name))
+        # print("Can not merge parameters from {}".format(target_node.name))
         return
     
     q_row_b_node = nodes_dict['Slice_{}'.format(node_id+30)]
@@ -286,6 +286,8 @@ def merge_parameters(nodes_dict, target_node):
     value_node.outputs[0].outputs[0].outputs[0].name += 'Del'
     value_node.outputs[0].outputs[0].outputs[0].outputs[0].inputs[1] = new_value
     value_node.outputs[0].outputs[0].outputs.clear()
+
+    print("Merge parameters from {}".format(target_node.name))
 
 def reuse_posemb(nodes_dict, target_node, reuse_id):
     node_id = int(target_node.name.split("_")[-1])
@@ -792,19 +794,20 @@ for node in nodes:
 
 if not DEBUG:
     print("Change cast op for sucessfully pasering")
-    cast_to_int32(nodes_dict, nodes_dict['Gather_1097'])
+    cast_to_int32(nodes_dict, nodes_dict['Gather_1115'])
 
     print("Add cast op for sucessfully pasering")
-    add_cast(nodes_dict, nodes_dict['Not_1235'], nodes)
+    add_cast(nodes_dict, nodes_dict['Not_1253'], nodes)
 
 if ENABLE_MERGE_PARAM:
     print("Fuse ops into params")
-    ops = [1444, 1903, 2362, 2821, 3280, 3739,
-           4524, 5286, 6048, 6810, 7572, 8334]
-    for op_name in ops:
-        op_name = 'Gather_{}'.format(op_name)
-        if op_name in nodes_dict:
-            merge_parameters(nodes_dict, nodes_dict[op_name])
+    # ops = [1444, 1903, 2362, 2821, 3280, 3739,
+    #        4524, 5286, 6048, 6810, 7572, 8334]
+
+    for op_name in nodes_dict:
+        if 'Gather' not in op_name:
+            continue
+        merge_parameters(nodes_dict, nodes_dict[op_name])
     dst_onnx_path =  dst_onnx_path.replace(".onnx", "_mergeparams.onnx")
 
 if ENABLE_LAYERNORM_PLUGIN:
@@ -818,7 +821,8 @@ if ENABLE_LAYERNORM_PLUGIN:
     dst_onnx_path =  dst_onnx_path.replace(".onnx", "_ln.onnx")
 if ENABLE_SOFTMAX_PLUGIN:
     print("Replace ops into Softmax")
-    ops = [4284, 5046, 5808, 6570, 7332, 8094]
+    # ops = [4284, 5046, 5808, 6570, 7332, 8094]
+    ops = [4302, 5064, 5826, 6588, 7350, 8112]
     for op_name in ops:
         op_name = "Softmax_{}".format(op_name)
         if op_name in nodes_dict:
@@ -826,13 +830,15 @@ if ENABLE_SOFTMAX_PLUGIN:
     dst_onnx_path = dst_onnx_path.replace(".onnx", "_softmax.onnx")
 if ENABLE_MASKEDSOFTMAX_PLUGIN and not ENABLE_RCDA_PLUGIN:
     print("Fuse ops into MaskedSoftmax in encoder")
-    ops = [1710, 1711, 2169, 2170, 2628, 2629, 3087, 3088, 3546, 3547, 4005, 4006]
+    # ops = [1710, 1711, 2169, 2170, 2628, 2629, 3087, 3088, 3546, 3547, 4005, 4006]
+    ops = [1728, 1729, 2187, 2188, 2646, 2647, 3105, 3106, 3564, 3565, 4023, 4024]
     for op_name in ops:
         op_name = "Softmax_{}".format(op_name)
         if op_name in nodes_dict:
             replace_with_maskedsoftmax(nodes_dict, nodes_dict[op_name], nodes)
 
-    ops = [4790, 4791, 5552, 5553, 6314, 6315, 7076, 7077, 7838, 7839, 8600, 8601]
+    # ops = [4790, 4791, 5552, 5553, 6314, 6315, 7076, 7077, 7838, 7839, 8600, 8601]
+    ops = [4808, 4809, 5570, 5571, 6332, 6333, 7094, 7095, 7856, 7857, 8618, 8619]
     print("Fuse ops into MaskedSoftmax in decoder")
     for op_name in ops:
         op_name = "Softmax_{}".format(op_name)
@@ -842,14 +848,16 @@ if ENABLE_MASKEDSOFTMAX_PLUGIN and not ENABLE_RCDA_PLUGIN:
     dst_onnx_path = dst_onnx_path.replace(".onnx", "_msoftmax.onnx")
 if ENABLE_ADDQBIASTRANSPOSE_PLUGIN and not ENABLE_RCDA_PLUGIN:
     print("Fuse ops into AddQBiasTranspose in encoder")
-    ops = [1502, 1477, 1961, 1936, 2420, 2395, 2879, 2854, 3338, 3313, 3797, 3772]
+    # ops = [1502, 1477, 1961, 1936, 2420, 2395, 2879, 2854, 3338, 3313, 3797, 3772]
+    ops = [1520, 1495, 1979, 1954, 2438, 2413, 2897, 2872, 3356, 3331, 3815, 3790]
     for op_name in ops:
         op_name = "Add_{}".format(op_name)
         if op_name in nodes_dict:
             replace_with_addQbiastranspose(nodes_dict, nodes_dict[op_name], nodes)
 
     print("Fuse ops into AddQBiasTranspose in decoder")
-    ops = [4557, 4582, 5319, 5344, 6081, 6106, 6843, 6868, 7605, 7630, 8367, 8392]
+    # ops = [4557, 4582, 5319, 5344, 6081, 6106, 6843, 6868, 7605, 7630, 8367, 8392]
+    ops = [4575, 4600, 5337, 5362, 6099, 6124, 6861, 6886, 7623, 7648, 8385, 8410]
     for op_name in ops:
         op_name = "Add_{}".format(op_name)
         if op_name in nodes_dict:
@@ -857,14 +865,16 @@ if ENABLE_ADDQBIASTRANSPOSE_PLUGIN and not ENABLE_RCDA_PLUGIN:
     dst_onnx_path = dst_onnx_path.replace(".onnx", "_Q.onnx")
 if ENABLE_ADDVBIASTRANSPOSE_PLUGIN and not ENABLE_RCDA_PLUGIN:
     print("Fuse ops into AddVBiasTranspose in encoder")
-    ops = [1577, 2036, 2495, 2954, 3413, 3872]
+    # ops = [1577, 2036, 2495, 2954, 3413, 3872]
+    ops = [1595, 2054, 2513, 2972, 3431, 3890]
     for op_name in ops:
         op_name = "Add_{}".format(op_name)
         if op_name in nodes_dict:
             replace_with_addVbiastranspose(nodes_dict, nodes_dict[op_name], nodes)
     
     print("Fuse ops into AddVBiasTranspose in decoder")
-    ops = [4657, 5419, 6181, 6943, 7705, 8467]
+    # ops = [4657, 5419, 6181, 6943, 7705, 8467]
+    ops = [4675, 5437, 6199, 6961, 7723, 8485]
     for op_name in ops:
         op_name = "Add_{}".format(op_name)
         if op_name in nodes_dict:
@@ -877,7 +887,8 @@ if ENABLE_OPTDYNAMICSHAPE:
     dst_onnx_path = dst_onnx_path.replace(".onnx", "_optshape.onnx")
 if ENABLE_CONVERT2DMM:
     print("Convert 4d MM(Matric Multiplication) to 2d MM")
-    ops = [1788, 2247, 2706, 3165, 3624, 4083]
+    # ops = [1788, 2247, 2706, 3165, 3624, 4083]
+    ops = [1806, 2265, 2724, 3183, 3642, 4101]
     for op_name in ops:
         op_name = "MatMul_{}".format(op_name)
         if op_name in nodes_dict:
@@ -886,7 +897,8 @@ if ENABLE_CONVERT2DMM:
 
 if ENABLE_CONVERT3DMM:
     print("Convert 4d MM(Matric Multiplication) to 3d MM")
-    ops = [1749, 2208, 2667, 3126, 3585, 4044]
+    # ops = [1749, 2208, 2667, 3126, 3585, 4044]
+    ops = [1767, 2226, 2685, 3144, 3603, 4062]
     for op_name in ops:
         op_name = "MatMul_{}".format(op_name)
         if op_name in nodes_dict:
@@ -896,47 +908,54 @@ if ENABLE_CONVERT3DMM:
 if ENABLE_RCDA_PLUGIN:
     # TODO(YukSing:) 4556, 5318, 6080, 6842, 7604, 8366 for decoder
     print("Fuse ops into RCDAPlugin in encoder")
-    ops = [1476, 1935, 2394, 2853, 3312, 3771]
+    # ops = [1476, 1935, 2394, 2853, 3312, 3771]
+    ops = [1494, 1953, 2412, 2871, 3330, 3789]
     for op_name in ops:
         op_name = 'MatMul_{}'.format(op_name)
         if op_name in nodes_dict:
             replace_with_rcda(nodes_dict, nodes_dict[op_name],  nodes)
     dst_onnx_path = dst_onnx_path.replace(".onnx", "_rcda.onnx")
 if ENABLE_REUSE_POS2D:
-    print("Reuse pos2posemb2d (Mul_4115)")
+    print("Reuse pos2posemb2d (Mul_4133)")
+    # ops = [4877, 5639, 6401, 7163, 7925]
     ops = [4877, 5639, 6401, 7163, 7925]
     for op_name in ops:
         op_name = 'Mul_{}'.format(op_name)
         if op_name in nodes_dict:
-            reuse_pos2posemb2d(nodes_dict, nodes_dict[op_name],  4115)
+            reuse_pos2posemb2d(nodes_dict, nodes_dict[op_name],  4133)
     dst_onnx_path = dst_onnx_path.replace(".onnx", "_pos2d.onnx")
 if ENABLE_REUSE_POS1D:
-    print("Reuse pos2posemb1d (Gather_4339, Gather_4379)")
-    ops = [5101, 5863, 6625, 7387, 8149]
+    print("Reuse pos2posemb1d (Gather_4357, Gather_4397)")
+    # ops = [5101, 5863, 6625, 7387, 8149]
+    ops = [5119, 5881, 6643, 7405, 8167]
     for id in ops:
         op_name = 'Gather_{}'.format(id)
         if op_name in nodes_dict:
-            reuse_pos2posemb1d(nodes_dict, nodes_dict[op_name],  4339)
+            reuse_pos2posemb1d(nodes_dict, nodes_dict[op_name],  4357)
         op_name = 'Gather_{}'.format(id+40)
         if op_name in nodes_dict:
-            reuse_pos2posemb1d(nodes_dict, nodes_dict[op_name],  4379)
+            reuse_pos2posemb1d(nodes_dict, nodes_dict[op_name],  4397)
     dst_onnx_path = dst_onnx_path.replace(".onnx", "_pos1d.onnx")
 if ENABLE_REUSE_POSEMB:
-    print("Reuse posemb_row (Tile_1386, 1768)")
-    ops = [1845,2304,2763,3222,3681,
-           4444,5206,5968,6730,7492,8254]
+    print("Reuse posemb_row (Tile_1404)")
+    # ops = [1845,2304,2763,3222,3681,
+    #        4444,5206,5968,6730,7492,8254]
+    ops = [1863, 2322, 2781, 3240, 3699, 
+            4462, 5224, 5986, 6748, 7510, 8272]
     for id in ops:
         op_name = 'Tile_{}'.format(id)
         if op_name in nodes_dict:
-            reuse_posemb(nodes_dict, nodes_dict[op_name], 1386)
+            reuse_posemb(nodes_dict, nodes_dict[op_name], 1404)
 
-    print("Reuse posemb_col (Tile_1413), 1806")
-    ops = [1872,2331,2790,3249,3708,
-           4471,5233,5995,6757,7519,8281]
+    print("Reuse posemb_col (Tile_1431)")
+    # ops = [1872,2331,2790,3249,3708,
+    #        4471,5233,5995,6757,7519,8281]
+    ops = [1890, 2349, 2808, 3267, 3726, 
+            4489, 5251, 6013, 6775, 7537, 8299]
     for id in ops:
         op_name = 'Tile_{}'.format(id)
         if op_name in nodes_dict:
-            reuse_posemb(nodes_dict, nodes_dict[op_name], 1413)
+            reuse_posemb(nodes_dict, nodes_dict[op_name], 1431)
     dst_onnx_path = dst_onnx_path.replace(".onnx", "_posemb.onnx")
 if ENABLE_REMOVE_SLICE:
     print("Remove Slice_1287, Slice_1325")
@@ -965,11 +984,10 @@ if ENABLE_GEMMBATCHED and DEBUG:
 
 if ENABLE_MASK2POS_PLUGIN:
     print("Insert Mask2PosPlugin")
-    ops = [1245, 1240]
-    for id in ops:
-        op_name = 'CumSum_{}'.format(id)
-        if op_name in nodes_dict:
-            replace_with_mask2pos(nodes_dict, nodes_dict[op_name], nodes)
+    for op_name in nodes_dict:
+        if 'CumSum' not in op_name:
+            continue
+        replace_with_mask2pos(nodes_dict, nodes_dict[op_name], nodes)
     dst_onnx_path = dst_onnx_path.replace(".onnx", "_mask2pos.onnx")
 if DEBUG:
     graph.cleanup().toposort()

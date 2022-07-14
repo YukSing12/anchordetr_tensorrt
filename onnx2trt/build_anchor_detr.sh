@@ -36,9 +36,9 @@ trtexec \
     --loadEngine=AnchorDETR.plan \
     --profilingVerbosity=detailed \
     --fp16 \
-    --minShapes=image:1x3x320x512,mask:1x320x512 \
-    --optShapes=image:1x3x800x800,mask:1x800x800 \
-    --maxShapes=image:1x3x1344x1344,mask:1x1344x1344 \
+    --minShapes=image:1x3x320x512 \
+    --optShapes=image:1x3x800x800 \
+    --maxShapes=image:1x3x1344x1344 \
     --plugins=./AddQBiasTransposePlugin.so \
     --plugins=./AddVBiasTransposePlugin.so \
     --plugins=./LayerNormPlugin.so \
