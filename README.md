@@ -1,13 +1,14 @@
-# trt-hackathon-2022
+# AnchorDETR 在TensorRT的部署优化
 
 ## 总述
-本项目是trt-hackathon-2022 决赛项目, 将AnchorDETR从Pytorch模型转换到TensorRT并部署到NVIDIA A10 GPU上。
+本项目是[trt-hackathon-2022](https://tianchi.aliyun.com/competition/entrance/531953/information) 决赛项目(荣获三等奖), 我们将AnchorDETR从Pytorch模型转换到TensorRT并部署到NVIDIA A10 GPU上。
 - 原始模型：Anchor DETR [[pdf]](https://arxiv.org/abs/2109.07107)[[code]](https://github.com/megvii-research/AnchorDETR)
 - 优化方式：实现了MaskedSoftmax Plugin,LayerNorm Plugin, AddBiasTranspose Plugin, Mask2Pos Plugin, 开启了FP16模式。
 - 优化效果：
   - 精度上, 优化模型在COCO2017验证集上的mAP=43.934%, 相比原始精度, mAP下降0.329%。
   - 性能上, 优化模型的latency=15.3353 ms, throughtput=70.4344 qps, 相比于TRT自动优化的原始模型, 提速315.808%。
-  - 发现了一个bug, 并提交了issue。
+  - 发现了一个bug, 并提交了[issue](https://github.com/NVIDIA/trt-samples-for-hackathon-cn/issues/33)。
+  
 ## 使用说明
 
 ### 准备环境
@@ -41,7 +42,7 @@ git clone https://github.com/YukSing12/trt-hackathon-2022
 cd trt-hackathon-2022
 pip install -r requirements.txt
 ```
-本代码在python=3.8.10, pytorch=1.9.1, torchvision=0.10.1环境下测试
+本项目在python=3.8.10, pytorch=1.9.1, torchvision=0.10.1环境下测试
 
 ### 准备数据
 详见[说明](datasets/README.md)
@@ -152,6 +153,10 @@ bash build_anchor_detr.sh
 |&emsp;+LayerNorm Plugin|16.5521|67.0348|43.891|
 |&emsp;+AddBiasTranspose Plugin|15.7594|69.0925|43.920|
 |&emsp;+Mask2Pos Plugin|15.3353|70.4344|43.934|
+
+## 未来工作
+- [ ] int8
+- [ ] deepstream
 
 ## Bug 报告
 
