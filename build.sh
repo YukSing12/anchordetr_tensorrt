@@ -1,28 +1,27 @@
 workdir=$(cd $(dirname $0); pwd)
 clear
 echo "===================== Convert model from pytorch to onnx ===================="
-# cd $workdir/src/AnchorDETR/
-# bash export_dynamic_shape_onnx.sh
-# mv $workdir/model/onnx/AnchorDETR_dynamic.onnx  $workdir/model/onnx/AnchorDETR.onnx
+bash export_dynamic_shape_onnx.sh
+mv $workdir/model/onnx/AnchorDETR_dynamic.onnx  $workdir/model/onnx/AnchorDETR.onnx
 
 echo "=========================== Start building plugins =========================="
-# cd $workdir
-# plugins="
-#     AddQBiasTransposePlugin
-#     AddVBiasTransposePlugin
-#     LayerNormPlugin
-#     Mask2PosPlugin
-#     MaskedSoftmaxPlugin
-# "
-# for plugin in $plugins
-# do
-#     echo "========================= Start building $plugin ========================"
-#     plugin_dir="${workdir}/src/plugins/${plugin}"
-#     cd $plugin_dir
-#     make clean
-#     make all
-#     cp "$plugin.so" $workdir/so
-# done
+cd $workdir
+plugins="
+    AddQBiasTransposePlugin
+    AddVBiasTransposePlugin
+    LayerNormPlugin
+    Mask2PosPlugin
+    MaskedSoftmaxPlugin
+"
+for plugin in $plugins
+do
+    echo "========================= Start building $plugin ========================"
+    plugin_dir="${workdir}/src/plugins/${plugin}"
+    cd $plugin_dir
+    make clean
+    make all
+    cp "$plugin.so" $workdir/so
+done
 
 echo "===================== Convert model from onnx to tensorrt ===================="
 cd $workdir/src/python
