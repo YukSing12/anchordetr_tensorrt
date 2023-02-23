@@ -1,1 +1,0 @@
-python export_onnx.py  --resume ../../datasets/AnchorDETR_r50_dc5.pth --dynamic_shape  --onnx_path AnchorDETR_dynamic.onnx

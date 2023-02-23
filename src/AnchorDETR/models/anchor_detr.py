@@ -372,7 +372,7 @@ def build(args):
         transformer,
         num_feature_levels=args.num_feature_levels,
         aux_loss=args.aux_loss,
-        deepstream=args.deepstream
+        deepstream=False # todo: deepstream
     )
     if args.masks:
         model = DETRsegm(model, freeze_detr=(args.frozen_weights is not None))

@@ -30,3 +30,11 @@
 *.exe
 *.out
 *.app
+
+# Data
+data/coco
+
+# Model
+*.pth
+*.onnx
+*.plan

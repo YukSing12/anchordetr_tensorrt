@@ -6,7 +6,8 @@ import argparse
 
 def get_args():
     parser = argparse.ArgumentParser('Export AnchorDETR TensorRT', add_help=False)
-    parser.add_argument('--odir', default='engines', type=str, help='Directory of onnx to save, default is ./engines')
+    parser.add_argument('--src_onnx', required=True, type=str, help='Path of onnx to load')
+    parser.add_argument('--dst_onnx', required=True, type=str, help='Path of onnx to save')
     parser.add_argument('--mergeparams', action='store_true', default=False, help='Merge parameters or not')
     parser.add_argument('--ln', action='store_true', default=False, help='Replace ops with LayernormPlugin or not')
     parser.add_argument('--softmax', action='store_true', default=False, help='Replace ops with SoftmaxPlugin or not')
@@ -46,10 +47,10 @@ ENABLE_GEMMBATCHED = False
 ENABLE_MASK2POS_PLUGIN = args.mask2pos
 DEBUG = args.debug
 
-src_onnx_path = './AnchorDETR.onnx'
+src_onnx_path = args.src_onnx
 if DEBUG:
     src_onnx_path = './debug.onnx'
-dst_onnx_path = './engines/onnx/modified_AnchorDETR.onnx'
+dst_onnx_path = args.dst_onnx
 
 def replace_with_mask2pos(nodes_dict, target_node, nodes):
     node_id = int(target_node.name.split("_")[-1])

@@ -214,16 +214,16 @@ def evaluate_onnx(ort_session, criterion, postprocessors, data_loader, base_ds, 
         targets = [{k: v for k, v in t.items()} for t in targets]
 
         # outputs = model(samples)
-        ort_inputs = {"image":samples.tensors.numpy(), "mask":samples.mask.float().numpy()}
+        onnx_inputs = {"image":samples.tensors.numpy()}
         if len(ort_session) == 1:
-            result = ort_session[0].run(None, ort_inputs)
+            result = ort_session[0].run(None, onnx_inputs)
         else:
-            backbone_result = ort_session[0].run(None, ort_inputs)
+            backbone_result = ort_session[0].run(None, onnx_inputs)
             # 1541-feat  1566-mask_out 
             transformer_inputs = {"1541":backbone_result[0], "1568":backbone_result[1]}
             result = ort_session[1].run(None, transformer_inputs)
-        # result = ort_session.run(None, ort_inputs)
-        # scores, boxs = ort_session.run(None, ort_inputs)
+        # result = ort_session.run(None, onnx_inputs)
+        # scores, boxs = ort_session.run(None, onnx_inputs)
         outputs = {}
         outputs['pred_logits'] = torch.from_numpy(result[0])
         outputs['pred_boxes'] = torch.from_numpy(result[1])

@@ -9,72 +9,20 @@ import argparse
 
 def get_args():
     parser = argparse.ArgumentParser('Export AnchorDETR TensorRT', add_help=False)
-    parser.add_argument('--onnx', type=str, help='Path of onnx file to load')
-    parser.add_argument('--trt', default='', type=str, help='Path of trt engine to save')
-    parser.add_argument('--mergeparams', action='store_true', default=False, help='Merge parameters or not')
-    parser.add_argument('--ln', action='store_true', default=False, help='Replace ops with LayernormPlugin or not')
-    parser.add_argument('--softmax', action='store_true', default=False, help='Replace ops with SoftmaxPlugin or not')
-    parser.add_argument('--maskedsoftmax', action='store_true', default=False, help='Replace ops with MaskedSoftmaxPlugin or not')
-    parser.add_argument('--addQbiastranspose', '-Q', action='store_true', default=False, help='Replace ops with AddQBiasTransposePlugin or not')
-    parser.add_argument('--addVbiastranspose', '-V', action='store_true', default=False, help='Replace ops with AddVBiasTransposePlugin or not')
-    parser.add_argument('--mask2pos', action='store_true', default=False, help='Replace ops with Mask2PosPlugin or not')
-    parser.add_argument('--optshape', action='store_true', default=False, help='Optimize input shape or not')
-    parser.add_argument('--twodmm', action='store_true', default=False, help='Convert 4dmm to 2dmm or not')
-    parser.add_argument('--threedmm', action='store_true', default=False, help='Convert 4dmm to 3dmm or not')
-    parser.add_argument('--rcda', action='store_true', default=False, help='Replace ops with RCDAPlugin or not')
-    parser.add_argument('--pos2d', action='store_true', default=False, help='Reuse pos2d or not')
-    parser.add_argument('--pos1d', action='store_true', default=False, help='Reuse pos1d or not')
-    parser.add_argument('--posemb', action='store_true', default=False, help='Reuse posemb or not')
-    parser.add_argument('--rmslice', action='store_true', default=False, help='Remove nodes of slice or not')
+    parser.add_argument('--onnx', required=True, type=str, help='Path of onnx file to load')
+    parser.add_argument('--trt', required=True, type=str, help='Path of trt engine to save')
+    parser.add_argument('--plugins', required=True, type=str, help='Directory of trt plugins to load')
     parser.add_argument('--fp16', action='store_true', default=False, help='Enable FP16 mode or not, default is TF32 if it is supported')
     parser.add_argument('--log_level', default=1, type=int, help='Logger level. (0:VERBOSE, 1:INFO, 2:WARNING, 3:ERROR, 4:INTERNAL_ERROR)')
     args = parser.parse_args()
     return args
 
 args = get_args()
-if args.onnx:
-    onnxFile = args.onnx
-else:
-    onnxFile = './engines/onnx/modified_AnchorDETR.onnx'
-
-if args.mergeparams:
-    onnxFile =  onnxFile.replace(".onnx", "_mergeparams.onnx")
-if args.ln:
-    onnxFile = onnxFile.replace(".onnx", "_ln.onnx")
-if args.softmax:
-    onnxFile = onnxFile.replace(".onnx", "_softmax.onnx")
-if args.maskedsoftmax and not args.rcda:
-    onnxFile = onnxFile.replace(".onnx", "_msoftmax.onnx")
-if args.addQbiastranspose and not args.rcda:
-    onnxFile = onnxFile.replace(".onnx", "_Q.onnx")
-if args.addVbiastranspose and not args.rcda:
-    onnxFile = onnxFile.replace(".onnx", "_V.onnx")
-if args.optshape:
-    onnxFile = onnxFile.replace(".onnx", "_optshape.onnx")
-if args.twodmm:
-    onnxFile = onnxFile.replace(".onnx", "_2dmm.onnx")
-if args.rcda:
-    onnxFile = onnxFile.replace(".onnx", "_rcda.onnx")
-if args.pos2d:
-    onnxFile = onnxFile.replace(".onnx", "_pos2d.onnx")
-if args.pos1d:
-    onnxFile = onnxFile.replace(".onnx", "_pos1d.onnx")
-if args.posemb:
-    onnxFile = onnxFile.replace(".onnx", "_posemb.onnx")
-if args.rmslice:
-    onnxFile = onnxFile.replace(".onnx", "_rmslice.onnx")
-if args.mask2pos:
-    onnxFile = onnxFile.replace(".onnx", "_mask2pos.onnx")
-if args.trt == '':
-    trtFile = onnxFile.replace('onnx','plan')
-else:
-    trtFile = args.trt
-
-if args.fp16:
-    trtFile = trtFile.replace('.plan','_fp16.plan')
+onnxFile = args.onnx
+trtFile = args.trt
     
-timeCacheFile = "/target/onnx2trt/AnchorDETR.cache"
-soFileList = glob("./*.so")
+timeCacheFile = "./AnchorDETR.cache"
+soFileList = glob(os.path.join(args.plugins,"*.so"))
 useTimeCache = False
 
 log_level = {0:trt.Logger.VERBOSE,
