@@ -6,22 +6,11 @@ mv $workdir/model/onnx/AnchorDETR_dynamic.onnx  $workdir/model/onnx/AnchorDETR.o
 
 echo "=========================== Start building plugins =========================="
 cd $workdir
-plugins="
-    AddQBiasTransposePlugin
-    AddVBiasTransposePlugin
-    LayerNormPlugin
-    Mask2PosPlugin
-    MaskedSoftmaxPlugin
-"
-for plugin in $plugins
-do
-    echo "========================= Start building $plugin ========================"
-    plugin_dir="${workdir}/src/plugins/${plugin}"
-    cd $plugin_dir
-    make clean
-    make all
-    cp "$plugin.so" $workdir/so
-done
+mkdir -p build
+cd build
+cmake ..
+make -j8
+make install
 
 echo "===================== Convert model from onnx to tensorrt ===================="
 cd $workdir/src/python

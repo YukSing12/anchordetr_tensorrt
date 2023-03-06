@@ -1,2 +1,2 @@
 workdir=$(cd $(dirname $0); pwd)
-python $workdir/src/AnchorDETR/inference_trt.py --dynamic_shape --coco_path $workdir/data/coco --device cuda --trt_path $workdir/model/plan/AnchorDETR.plan --plugins $workdir/so
+python $workdir/src/AnchorDETR/inference_trt.py --dynamic_shape --coco_path $workdir/data/coco --device cuda --trt_path $workdir/model/plan/AnchorDETR.plan --plugins $workdir/so/plugins

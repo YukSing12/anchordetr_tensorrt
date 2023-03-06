@@ -30,6 +30,7 @@
 *.exe
 *.out
 *.app
+build
 
 # Data
 data/coco
@@ -38,3 +39,7 @@ data/coco
 *.pth
 *.onnx
 *.plan
+
+# TensorRT
+so/tensorrt/lib
+include/tensorrt/include
