@@ -41,6 +41,8 @@ source ~/.bashrc
 git clone https://github.com/YukSing12/trt-hackathon-2022
 cd trt-hackathon-2022
 pip install -r requirements.txt
+ln -s /usr/local/TensorRT-8.4.1.5/include include/tensorrt
+ln -s /usr/local/TensorRT-8.4.1.5/lib so/tensorrt
 ```
 本项目在python=3.8.10, pytorch=1.9.1, torchvision=0.10.1环境下测试
 
